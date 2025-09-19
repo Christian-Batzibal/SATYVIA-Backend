@@ -4,6 +4,7 @@ using HotelReservationAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelReservationAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250919172631_Add15Services")]
+    partial class Add15Services
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,6 +156,37 @@ namespace HotelReservationAPI.Migrations
                     b.ToTable("Reservation", (string)null);
                 });
 
+            modelBuilder.Entity("HotelReservationAPI.Models.Room", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BranchId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.ToTable("Room", (string)null);
+                });
+
             modelBuilder.Entity("HotelReservationAPI.Models.RoomService", b =>
                 {
                     b.Property<int>("RoomId")
@@ -281,40 +315,9 @@ namespace HotelReservationAPI.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Room", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BranchId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Capacity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BranchId");
-
-                    b.ToTable("Room", (string)null);
-                });
-
             modelBuilder.Entity("HotelReservationAPI.Models.Offer", b =>
                 {
-                    b.HasOne("Room", "Room")
+                    b.HasOne("HotelReservationAPI.Models.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId");
 
@@ -327,16 +330,27 @@ namespace HotelReservationAPI.Migrations
                         .WithMany("Reservations")
                         .HasForeignKey("ClientId");
 
-                    b.HasOne("Room", "Room")
+                    b.HasOne("HotelReservationAPI.Models.Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId");
 
                     b.Navigation("Room");
                 });
 
+            modelBuilder.Entity("HotelReservationAPI.Models.Room", b =>
+                {
+                    b.HasOne("HotelReservationAPI.Models.Branch", "Branch")
+                        .WithMany("Rooms")
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Branch");
+                });
+
             modelBuilder.Entity("HotelReservationAPI.Models.RoomService", b =>
                 {
-                    b.HasOne("Room", "Room")
+                    b.HasOne("HotelReservationAPI.Models.Room", "Room")
                         .WithMany("RoomServices")
                         .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -353,17 +367,6 @@ namespace HotelReservationAPI.Migrations
                     b.Navigation("Service");
                 });
 
-            modelBuilder.Entity("Room", b =>
-                {
-                    b.HasOne("HotelReservationAPI.Models.Branch", "Branch")
-                        .WithMany("Rooms")
-                        .HasForeignKey("BranchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Branch");
-                });
-
             modelBuilder.Entity("HotelReservationAPI.Models.Branch", b =>
                 {
                     b.Navigation("Rooms");
@@ -374,12 +377,12 @@ namespace HotelReservationAPI.Migrations
                     b.Navigation("Reservations");
                 });
 
-            modelBuilder.Entity("HotelReservationAPI.Models.Service", b =>
+            modelBuilder.Entity("HotelReservationAPI.Models.Room", b =>
                 {
                     b.Navigation("RoomServices");
                 });
 
-            modelBuilder.Entity("Room", b =>
+            modelBuilder.Entity("HotelReservationAPI.Models.Service", b =>
                 {
                     b.Navigation("RoomServices");
                 });

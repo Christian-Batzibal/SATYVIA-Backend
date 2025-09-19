@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelReservationAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250415150740_InitialCreate")]
+    [Migration("20250918222052_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -43,7 +43,7 @@ namespace HotelReservationAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Branches");
+                    b.ToTable("Branch", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Client", b =>
@@ -72,7 +72,7 @@ namespace HotelReservationAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Clients");
+                    b.ToTable("Client", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Offer", b =>
@@ -107,7 +107,7 @@ namespace HotelReservationAPI.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("Offers");
+                    b.ToTable("Offer", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Reservation", b =>
@@ -118,20 +118,34 @@ namespace HotelReservationAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ClientId")
+                    b.Property<int?>("ClientId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("RoomId")
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RoomId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -139,7 +153,7 @@ namespace HotelReservationAPI.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("Reservations");
+                    b.ToTable("Reservation", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Room", b =>
@@ -156,6 +170,9 @@ namespace HotelReservationAPI.Migrations
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
 
+                    b.Property<string>("ImagePath")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Number")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -167,7 +184,7 @@ namespace HotelReservationAPI.Migrations
 
                     b.HasIndex("BranchId");
 
-                    b.ToTable("Rooms");
+                    b.ToTable("Room", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Offer", b =>
@@ -181,21 +198,15 @@ namespace HotelReservationAPI.Migrations
 
             modelBuilder.Entity("HotelReservationAPI.Models.Reservation", b =>
                 {
-                    b.HasOne("HotelReservationAPI.Models.Client", "client")
+                    b.HasOne("HotelReservationAPI.Models.Client", null)
                         .WithMany("Reservations")
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ClientId");
 
                     b.HasOne("HotelReservationAPI.Models.Room", "Room")
                         .WithMany()
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RoomId");
 
                     b.Navigation("Room");
-
-                    b.Navigation("client");
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Room", b =>

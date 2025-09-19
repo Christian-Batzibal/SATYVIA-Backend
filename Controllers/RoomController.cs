@@ -20,27 +20,120 @@ namespace HotelReservationAPI.Controllers
             _context = context;
         }
 
-        // GET: api/Room
+        // ✅ GET: api/Room
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Room>>> GetRooms()
+        public async Task<ActionResult<IEnumerable<object>>> GetRooms()
         {
-            return await _context.Rooms.ToListAsync();
+            var rooms = await _context.Room
+                .Include(r => r.Branch)
+                .Include(r => r.RoomServices)
+                    .ThenInclude(rs => rs.Service)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.Capacity,
+                    r.Price,
+                    r.ImagePath,
+                    Branch = r.Branch != null ? r.Branch.Name : null,
+                    Services = r.RoomServices.Select(rs => new
+                    {
+                        rs.Service.Id,
+                        rs.Service.Name,
+                        rs.Service.Description
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(rooms);
         }
 
-        // GET: api/Room/5
+        // ✅ GET: api/Room/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Room>> GetRoom(int id)
+        public async Task<ActionResult<object>> GetRoom(int id)
         {
-            var room = await _context.Rooms.FindAsync(id);
+            var room = await _context.Room
+                .Include(r => r.Branch)
+                .Include(r => r.RoomServices)
+                    .ThenInclude(rs => rs.Service)
+                .Where(r => r.Id == id)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.Capacity,
+                    r.Price,
+                    r.ImagePath,
+                    Branch = r.Branch != null ? r.Branch.Name : null,
+                    Services = r.RoomServices.Select(rs => new
+                    {
+                        rs.Service.Id,
+                        rs.Service.Name,
+                        rs.Service.Description
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
             if (room == null) return NotFound();
-            return room;
+            return Ok(room);
+        }
+
+        // ✅ GET: api/Room/available
+        [HttpGet("available")]
+        public async Task<ActionResult<IEnumerable<object>>> GetAvailableRooms(
+            [FromQuery] int branchId,
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate,
+            [FromQuery] int guests)
+        {
+            if (startDate >= endDate)
+            {
+                return BadRequest("La fecha de inicio debe ser anterior a la fecha de fin.");
+            }
+
+            var reservedRoomIds = await _context.Reservation
+                .Where(r =>
+                    r.StartDate < endDate &&
+                    r.EndDate > startDate
+                )
+                .Select(r => r.RoomId)
+                .Distinct()
+                .ToListAsync();
+
+            var availableRooms = await _context.Room
+                .Include(r => r.Branch)
+                .Include(r => r.RoomServices)
+                    .ThenInclude(rs => rs.Service)
+                .Where(r =>
+                    r.BranchId == branchId &&
+                    !reservedRoomIds.Contains(r.Id) &&
+                    r.Capacity >= guests
+                )
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.Capacity,
+                    r.Price,
+                    r.ImagePath,
+                    Branch = r.Branch != null ? r.Branch.Name : null,
+                    Services = r.RoomServices.Select(rs => new
+                    {
+                        rs.Service.Id,
+                        rs.Service.Name,
+                        rs.Service.Description
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(availableRooms);
         }
 
         // POST: api/Room
         [HttpPost]
         public async Task<ActionResult<Room>> PostRoom(Room room)
         {
-            _context.Rooms.Add(room);
+            _context.Room.Add(room);
             await _context.SaveChangesAsync();
             return CreatedAtAction("GetRoom", new { id = room.Id }, room);
         }
@@ -69,55 +162,17 @@ namespace HotelReservationAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRoom(int id)
         {
-            var room = await _context.Rooms.FindAsync(id);
+            var room = await _context.Room.FindAsync(id);
             if (room == null) return NotFound();
 
-            _context.Rooms.Remove(room);
+            _context.Room.Remove(room);
             await _context.SaveChangesAsync();
             return NoContent();
         }
 
         private bool RoomExists(int id)
         {
-            return _context.Rooms.Any(e => e.Id == id);
-        }
-
-        // ✅ NUEVO ENDPOINT: /api/Room/available
-        [HttpGet("available")]
-        public async Task<ActionResult<IEnumerable<Room>>> GetAvailableRooms(
-            [FromQuery] int branchId,
-            [FromQuery] DateTime startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] int guests)
-        {
-            if (startDate >= endDate)
-            {
-                return BadRequest("La fecha de inicio debe ser anterior a la fecha de fin.");
-            }
-
-            // Buscar reservas que se crucen con las fechas indicadas
-            var reservedRoomIds = await _context.Reservations
-                .Where(r =>
-                    r.StartDate < endDate &&
-                    r.EndDate > startDate
-                )
-                .Select(r => r.RoomId)
-                .Distinct()
-                .ToListAsync();
-
-            // Buscar habitaciones que:
-            // 1. Sean de la sucursal indicada
-            // 2. No estén reservadas en las fechas indicadas
-            // 3. Tengan capacidad suficiente
-            var availableRooms = await _context.Rooms
-                .Where(r =>
-                    r.BranchId == branchId &&
-                    !reservedRoomIds.Contains(r.Id) &&
-                    r.Capacity >= guests
-                )
-                .ToListAsync();
-
-            return availableRooms;
+            return _context.Room.Any(e => e.Id == id);
         }
     }
 }

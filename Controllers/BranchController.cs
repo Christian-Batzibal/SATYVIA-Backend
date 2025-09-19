@@ -25,14 +25,14 @@ namespace HotelReservationAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Branch>>> GetBranches()
         {
-            return await _context.Branches.ToListAsync();
+            return await _context.Branch.ToListAsync();
         }
 
         // GET: api/Branche/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Branch>> GetBranch(int id)
         {
-            var branch = await _context.Branches.FindAsync(id);
+            var branch = await _context.Branch.FindAsync(id);
 
             if (branch == null)
             {
@@ -78,7 +78,7 @@ namespace HotelReservationAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Branch>> PostBranch(Branch branch)
         {
-            _context.Branches.Add(branch);
+            _context.Branch.Add(branch);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetBranch", new { id = branch.Id }, branch);
@@ -88,13 +88,13 @@ namespace HotelReservationAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBranch(int id)
         {
-            var branch = await _context.Branches.FindAsync(id);
+            var branch = await _context.Branch.FindAsync(id);
             if (branch == null)
             {
                 return NotFound();
             }
 
-            _context.Branches.Remove(branch);
+            _context.Branch.Remove(branch);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -102,7 +102,7 @@ namespace HotelReservationAPI.Controllers
 
         private bool BranchExists(int id)
         {
-            return _context.Branches.Any(e => e.Id == id);
+            return _context.Branch.Any(e => e.Id == id);
         }
     }
 }

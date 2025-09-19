@@ -25,14 +25,14 @@ namespace HotelReservationAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Offer>>> GetOffers()
         {
-            return await _context.Offers.ToListAsync();
+            return await _context.Offer.ToListAsync();
         }
 
         // GET: api/Offer/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Offer>> GetOffer(int id)
         {
-            var offer = await _context.Offers.FindAsync(id);
+            var offer = await _context.Offer.FindAsync(id);
 
             if (offer == null)
             {
@@ -78,7 +78,7 @@ namespace HotelReservationAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Offer>> PostOffer(Offer offer)
         {
-            _context.Offers.Add(offer);
+            _context.Offer.Add(offer);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetOffer", new { id = offer.Id }, offer);
@@ -88,13 +88,13 @@ namespace HotelReservationAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOffer(int id)
         {
-            var offer = await _context.Offers.FindAsync(id);
+            var offer = await _context.Offer.FindAsync(id);
             if (offer == null)
             {
                 return NotFound();
             }
 
-            _context.Offers.Remove(offer);
+            _context.Offer.Remove(offer);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -102,7 +102,7 @@ namespace HotelReservationAPI.Controllers
 
         private bool OfferExists(int id)
         {
-            return _context.Offers.Any(e => e.Id == id);
+            return _context.Offer.Any(e => e.Id == id);
         }
     }
 }
