@@ -4,6 +4,7 @@ using HotelReservationAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelReservationAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250922231431_UpdateRomm_RemoveImagePath_AddRoomNumber")]
+    partial class UpdateRomm_RemoveImagePath_AddRoomNumber
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,28 +44,6 @@ namespace HotelReservationAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Branch", (string)null);
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.BranchImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BranchId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ImageBase64")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BranchId");
-
-                    b.ToTable("BranchImage", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Client", b =>
@@ -173,28 +154,6 @@ namespace HotelReservationAPI.Migrations
                     b.HasIndex("RoomId");
 
                     b.ToTable("Reservation", (string)null);
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.RoomImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ImageBase64")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RoomId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoomId");
-
-                    b.ToTable("RoomImage", (string)null);
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.RoomService", b =>
@@ -349,26 +308,11 @@ namespace HotelReservationAPI.Migrations
                     b.Property<int>("RoomNumber")
                         .HasColumnType("int");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BranchId");
 
                     b.ToTable("Room", (string)null);
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.BranchImage", b =>
-                {
-                    b.HasOne("HotelReservationAPI.Models.Branch", "Branch")
-                        .WithMany("BranchImages")
-                        .HasForeignKey("BranchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Branch");
                 });
 
             modelBuilder.Entity("HotelReservationAPI.Models.Offer", b =>
@@ -389,17 +333,6 @@ namespace HotelReservationAPI.Migrations
                     b.HasOne("Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId");
-
-                    b.Navigation("Room");
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.RoomImage", b =>
-                {
-                    b.HasOne("Room", "Room")
-                        .WithMany("RoomImages")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Room");
                 });
@@ -436,8 +369,6 @@ namespace HotelReservationAPI.Migrations
 
             modelBuilder.Entity("HotelReservationAPI.Models.Branch", b =>
                 {
-                    b.Navigation("BranchImages");
-
                     b.Navigation("Rooms");
                 });
 
@@ -453,8 +384,6 @@ namespace HotelReservationAPI.Migrations
 
             modelBuilder.Entity("Room", b =>
                 {
-                    b.Navigation("RoomImages");
-
                     b.Navigation("RoomServices");
                 });
 #pragma warning restore 612, 618

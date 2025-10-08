@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using HotelReservationAPI.Data;
+using HotelReservationAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using HotelReservationAPI.Data;
-using HotelReservationAPI.Models;
 
 namespace HotelReservationAPI.Controllers
 {
@@ -20,114 +16,78 @@ namespace HotelReservationAPI.Controllers
             _context = context;
         }
 
-        // ✅ GET: api/Room
+        // GET: api/Room
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetRooms()
+        public async Task<ActionResult<object>> GetRooms(int page = 1, int pageSize = 6, int? branchId = null)
         {
-            var rooms = await _context.Room
+            var query = _context.Room
+                .AsNoTracking()
+                .Include(r => r.RoomImages)
                 .Include(r => r.Branch)
-                .Include(r => r.RoomServices)
-                    .ThenInclude(rs => rs.Service)
+                .AsQueryable();
+
+            if (branchId.HasValue)
+            {
+                query = query.Where(r => r.BranchId == branchId.Value);
+            }
+
+            var total = await query.CountAsync();
+
+            var rooms = await query
+                .OrderBy(r => r.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(r => new
                 {
-                    r.Id,
-                    r.Name,
-                    r.Capacity,
-                    r.Price,
-                    r.ImagePath,
-                    Branch = r.Branch != null ? r.Branch.Name : null,
-                    Services = r.RoomServices.Select(rs => new
-                    {
-                        rs.Service.Id,
-                        rs.Service.Name,
-                        rs.Service.Description
-                    }).ToList()
+                    id = r.Id,
+                    name = r.Name,
+                    capacity = r.Capacity,
+                    price = r.Price,
+                    branchId = r.BranchId,
+                    branchName = r.Branch.Name,
+                    roomNumber = r.RoomNumber,
+                    coverImage = r.RoomImages
+                                    .Select(i => i.ImageBase64)
+                                    .FirstOrDefault()
                 })
                 .ToListAsync();
 
-            return Ok(rooms);
+            return Ok(new
+            {
+                total,
+                page,
+                pageSize,
+                data = rooms
+            });
         }
 
-        // ✅ GET: api/Room/5
+
+        // GET: api/Room/5
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetRoom(int id)
         {
             var room = await _context.Room
+                .Include(r => r.RoomImages)
                 .Include(r => r.Branch)
-                .Include(r => r.RoomServices)
-                    .ThenInclude(rs => rs.Service)
-                .Where(r => r.Id == id)
-                .Select(r => new
-                {
-                    r.Id,
-                    r.Name,
-                    r.Capacity,
-                    r.Price,
-                    r.ImagePath,
-                    Branch = r.Branch != null ? r.Branch.Name : null,
-                    Services = r.RoomServices.Select(rs => new
-                    {
-                        rs.Service.Id,
-                        rs.Service.Name,
-                        rs.Service.Description
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(r => r.Id == id);
 
-            if (room == null) return NotFound();
-            return Ok(room);
-        }
+            if (room == null)
+                return NotFound();
 
-        // ✅ GET: api/Room/available
-        [HttpGet("available")]
-        public async Task<ActionResult<IEnumerable<object>>> GetAvailableRooms(
-            [FromQuery] int branchId,
-            [FromQuery] DateTime startDate,
-            [FromQuery] DateTime endDate,
-            [FromQuery] int guests)
-        {
-            if (startDate >= endDate)
+            return Ok(new
             {
-                return BadRequest("La fecha de inicio debe ser anterior a la fecha de fin.");
-            }
-
-            var reservedRoomIds = await _context.Reservation
-                .Where(r =>
-                    r.StartDate < endDate &&
-                    r.EndDate > startDate
-                )
-                .Select(r => r.RoomId)
-                .Distinct()
-                .ToListAsync();
-
-            var availableRooms = await _context.Room
-                .Include(r => r.Branch)
-                .Include(r => r.RoomServices)
-                    .ThenInclude(rs => rs.Service)
-                .Where(r =>
-                    r.BranchId == branchId &&
-                    !reservedRoomIds.Contains(r.Id) &&
-                    r.Capacity >= guests
-                )
-                .Select(r => new
-                {
-                    r.Id,
-                    r.Name,
-                    r.Capacity,
-                    r.Price,
-                    r.ImagePath,
-                    Branch = r.Branch != null ? r.Branch.Name : null,
-                    Services = r.RoomServices.Select(rs => new
-                    {
-                        rs.Service.Id,
-                        rs.Service.Name,
-                        rs.Service.Description
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(availableRooms);
+                id = room.Id,
+                name = room.Name,
+                capacity = room.Capacity,
+                price = room.Price,
+                branchId = room.BranchId,
+                branchName = room.Branch.Name,
+                roomNumber = room.RoomNumber,
+                images = room.RoomImages.Select(i => i.ImageBase64).ToList(),
+                coverImage = room.RoomImages.Select(i => i.ImageBase64).FirstOrDefault()
+            });
         }
+
 
         // POST: api/Room
         [HttpPost]
@@ -135,14 +95,61 @@ namespace HotelReservationAPI.Controllers
         {
             _context.Room.Add(room);
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetRoom", new { id = room.Id }, room);
+
+            return CreatedAtAction(nameof(GetRoom), new { id = room.Id }, room);
+        }
+
+        // GET: api/Room/available
+        [HttpGet("available")]
+        public async Task<ActionResult<IEnumerable<object>>> GetAvailableRooms(
+            int branchId, DateTime startDate, DateTime endDate, int guests)
+        {
+            var rooms = await _context.Room
+                .Include(r => r.RoomImages)
+                .Include(r => r.Branch)
+                .Where(r => r.BranchId == branchId && r.Capacity >= guests)
+                .ToListAsync();
+
+            var reservedRoomIds = await _context.Reservation
+                .Where(res =>
+                    res.Room.BranchId == branchId &&
+                    (
+                        (startDate >= res.StartDate && startDate < res.EndDate) ||
+                        (endDate > res.StartDate && endDate <= res.EndDate) ||
+                        (startDate <= res.StartDate && endDate >= res.EndDate)
+                    )
+                )
+                .Select(res => res.RoomId)
+                .ToListAsync();
+
+            var availableRooms = rooms
+                .Where(r => !reservedRoomIds.Contains(r.Id))
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.Capacity,
+                    r.Price,
+                    r.BranchId,
+                    BranchName = r.Branch.Name,
+                    r.RoomNumber,
+                    Images = r.RoomImages.Select(i => i.ImageBase64).ToList(),
+                    CoverImage = r.RoomImages.Select(i => i.ImageBase64).FirstOrDefault()
+                })
+                .ToList();
+
+            return Ok(availableRooms);
         }
 
         // PUT: api/Room/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRoom(int id, Room room)
         {
-            if (id != room.Id) return BadRequest();
+            if (id != room.Id)
+            {
+                return BadRequest();
+            }
+
             _context.Entry(room).State = EntityState.Modified;
 
             try
@@ -151,8 +158,14 @@ namespace HotelReservationAPI.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!RoomExists(id)) return NotFound();
-                else throw;
+                if (!RoomExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
 
             return NoContent();
@@ -163,10 +176,14 @@ namespace HotelReservationAPI.Controllers
         public async Task<IActionResult> DeleteRoom(int id)
         {
             var room = await _context.Room.FindAsync(id);
-            if (room == null) return NotFound();
+            if (room == null)
+            {
+                return NotFound();
+            }
 
             _context.Room.Remove(room);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
 

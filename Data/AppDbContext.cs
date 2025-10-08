@@ -16,6 +16,8 @@ namespace HotelReservationAPI.Data
         public DbSet<Offer> Offer { get; set; }
         public DbSet<Service> Service { get; set; }
         public DbSet<RoomService> RoomService { get; set; }
+        public DbSet<RoomImage> RoomImage { get; set; }
+        public DbSet<BranchImage> BranchImage { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +30,8 @@ namespace HotelReservationAPI.Data
             modelBuilder.Entity<Offer>().ToTable("Offer");
             modelBuilder.Entity<Service>().ToTable("Service");
             modelBuilder.Entity<RoomService>().ToTable("RoomService");
+            modelBuilder.Entity<RoomImage>().ToTable("RoomImage");
+            modelBuilder.Entity<BranchImage>().ToTable("BranchImage");
 
             modelBuilder.Entity<Reservation>(entity =>
             {
@@ -38,6 +42,7 @@ namespace HotelReservationAPI.Data
                 entity.Property(r => r.EndDate).IsRequired();
             });
 
+            // Relación RoomService
             modelBuilder.Entity<RoomService>()
                 .HasKey(rs => new { rs.RoomId, rs.ServiceId });
 
@@ -51,6 +56,19 @@ namespace HotelReservationAPI.Data
                 .WithMany(s => s.RoomServices)
                 .HasForeignKey(rs => rs.ServiceId);
 
+            // Relación RoomImage
+            modelBuilder.Entity<RoomImage>()
+                .HasOne(ri => ri.Room)
+                .WithMany(r => r.RoomImages)
+                .HasForeignKey(ri => ri.RoomId);
+
+            // Relación BranchImage
+            modelBuilder.Entity<BranchImage>()
+                .HasOne(bi => bi.Branch)
+                .WithMany(b => b.BranchImages)
+                .HasForeignKey(bi => bi.BranchId);
+
+            // Semillas de servicios
             modelBuilder.Entity<Service>().HasData(
                 new Service { Id = 1, Name = "WiFi", Description = "Conexión de alta velocidad gratuita en todas las habitaciones" },
                 new Service { Id = 2, Name = "Televisión", Description = "Pantalla plana con cable internacional y streaming" },

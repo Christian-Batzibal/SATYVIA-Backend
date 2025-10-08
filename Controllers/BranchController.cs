@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelReservationAPI.Data;
@@ -21,29 +19,53 @@ namespace HotelReservationAPI.Controllers
             _context = context;
         }
 
-        // GET: api/Branche
+        // ✅ GET: api/Branch
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Branch>>> GetBranches()
+        public async Task<ActionResult<IEnumerable<object>>> GetBranches()
         {
-            return await _context.Branch.ToListAsync();
+            var branches = await _context.Branch
+                .Include(b => b.BranchImages)
+                .ToListAsync();
+
+            var result = branches.Select(b => new
+            {
+                id = b.Id,
+                name = b.Name,
+                location = b.Location,
+                coverImage = b.BranchImages
+                    .Select(i => i.ImageBase64)
+                    .FirstOrDefault() is string img && !string.IsNullOrEmpty(img)
+                        ? (img.StartsWith("data:image")
+                            ? img.Trim()
+                            : "data:image/jpeg;base64," + img.Trim())
+                        : null
+            });
+
+            return Ok(result);
         }
 
-        // GET: api/Branche/5
+        // GET: api/Branch/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Branch>> GetBranch(int id)
+        public async Task<ActionResult<object>> GetBranch(int id)
         {
-            var branch = await _context.Branch.FindAsync(id);
+            var branch = await _context.Branch
+                .Include(b => b.BranchImages)
+                .FirstOrDefaultAsync(b => b.Id == id);
 
             if (branch == null)
-            {
                 return NotFound();
-            }
 
-            return branch;
+            return Ok(new
+            {
+                id = branch.Id,
+                name = branch.Name,
+                location = branch.Location,
+                images = branch.BranchImages.Select(i => i.ImageBase64).ToList(),
+                coverImage = branch.BranchImages.Select(i => i.ImageBase64).FirstOrDefault()
+            });
         }
 
-        // PUT: api/Branche/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // PUT: api/Branch/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutBranch(int id, Branch branch)
         {
@@ -73,18 +95,17 @@ namespace HotelReservationAPI.Controllers
             return NoContent();
         }
 
-        // POST: api/Branche
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // POST: api/Branch
         [HttpPost]
         public async Task<ActionResult<Branch>> PostBranch(Branch branch)
         {
             _context.Branch.Add(branch);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetBranch", new { id = branch.Id }, branch);
+            return CreatedAtAction(nameof(GetBranch), new { id = branch.Id }, branch);
         }
 
-        // DELETE: api/Branche/5
+        // DELETE: api/Branch/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBranch(int id)
         {

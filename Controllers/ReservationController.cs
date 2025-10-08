@@ -20,14 +20,7 @@ namespace HotelReservationAPI.Controllers
             _context = context;
         }
 
-        private string GetImagePath(int roomId)
-        {
-            int branch = (roomId - 1) / 6 + 1;
-            int room = ((roomId - 1) % 6) + 1;
-            return $"/images/rooms/{branch}Room{room}/1.jpg";
-        }
-
-        // ✅ GET: api/Reservation
+        // GET: api/Reservation
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetReservations()
         {
@@ -35,44 +28,79 @@ namespace HotelReservationAPI.Controllers
                 .Include(r => r.Room)
                     .ThenInclude(r => r.RoomServices)
                         .ThenInclude(rs => rs.Service)
+                .Include(r => r.Room)
+                    .ThenInclude(r => r.RoomImages)
                 .Where(r => r.StartDate >= DateTime.Now || r.StartDate == null)
-                .ToListAsync();
-
-            var result = reservations
                 .OrderBy(r => r.StartDate ?? DateTime.MaxValue)
                 .Select(r => new
                 {
                     r.Id,
                     r.ClientId,
                     r.RoomId,
-                    r.StartDate,
-                    r.EndDate,
+                    StartDate = r.StartDate.HasValue ? r.StartDate.Value.ToString("yyyy-MM-dd") : "No definida",
+                    EndDate = r.EndDate.HasValue ? r.EndDate.Value.ToString("yyyy-MM-dd") : "No definida",
                     r.Status,
                     r.FullName,
                     r.Email,
                     r.Phone,
-                    ImagePath = GetImagePath(r.Room.Id),
                     Room = new
                     {
                         r.Room.Id,
                         r.Room.Name,
                         r.Room.Capacity,
                         r.Room.Price,
-                        r.Room.ImagePath,
-                        Services = r.Room.RoomServices
-                            .Select(rs => new
-                            {
-                                rs.Service.Id,
-                                rs.Service.Name,
-                                rs.Service.Description
-                            }).ToList()
+                        r.Room.BranchId,
+                        r.Room.RoomNumber,
+                        CoverImage = r.Room.RoomImages.Select(img => img.ImageBase64).FirstOrDefault(),
+                        Images = r.Room.RoomImages.Select(img => img.ImageBase64).ToList(),
+                        Services = r.Room.RoomServices.Select(rs => new
+                        {
+                            rs.Service.Id,
+                            rs.Service.Name,
+                            rs.Service.Description
+                        }).ToList()
                     }
-                });
+                })
+                .ToListAsync();
 
-            return Ok(result);
+            return Ok(reservations);
         }
 
-        // ✅ GET: api/Reservation/5
+        // GET: api/Reservation/MyReservations
+        [HttpGet("MyReservations")]
+        public async Task<ActionResult<IEnumerable<object>>> GetMyReservations()
+        {
+            var reservations = await _context.Reservation
+                .AsNoTracking()
+                .Include(r => r.Room)
+                    .ThenInclude(room => room.RoomImages)
+                .Include(r => r.Room)
+                    .ThenInclude(room => room.Branch)
+                .OrderByDescending(r => r.StartDate)
+                .Select(r => new
+                {
+                    Id = r.Id,
+                    RoomId = r.RoomId,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    Status = r.Status,
+                    FullName = r.FullName,
+                    Email = r.Email,
+                    Phone = r.Phone,
+                    Room = new
+                    {
+                        Id = r.Room.Id,
+                        Name = r.Room.Name,
+                        BranchName = r.Room.Branch.Name,
+                        CoverImage = r.Room.RoomImages.Select(i => i.ImageBase64).FirstOrDefault()
+                    }
+                })
+                .ToListAsync();
+
+            return Ok(reservations);
+        }
+
+        // GET: api/Reservation/5
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetReservation(int id)
         {
@@ -80,6 +108,8 @@ namespace HotelReservationAPI.Controllers
                 .Include(r => r.Room)
                     .ThenInclude(r => r.RoomServices)
                         .ThenInclude(rs => rs.Service)
+                .Include(r => r.Room)
+                    .ThenInclude(r => r.RoomImages)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (reservation == null)
@@ -90,31 +120,33 @@ namespace HotelReservationAPI.Controllers
                 reservation.Id,
                 reservation.ClientId,
                 reservation.RoomId,
-                reservation.StartDate,
-                reservation.EndDate,
+                StartDate = reservation.StartDate.HasValue ? reservation.StartDate.Value.ToString("yyyy-MM-dd") : "No definida",
+                EndDate = reservation.EndDate.HasValue ? reservation.EndDate.Value.ToString("yyyy-MM-dd") : "No definida",
                 reservation.Status,
                 reservation.FullName,
                 reservation.Email,
                 reservation.Phone,
-                ImagePath = GetImagePath(reservation.Room.Id),
                 Room = new
                 {
                     reservation.Room.Id,
                     reservation.Room.Name,
                     reservation.Room.Capacity,
                     reservation.Room.Price,
-                    reservation.Room.ImagePath,
-                    Services = reservation.Room.RoomServices
-                        .Select(rs => new
-                        {
-                            rs.Service.Id,
-                            rs.Service.Name,
-                            rs.Service.Description
-                        }).ToList()
+                    reservation.Room.BranchId,
+                    reservation.Room.RoomNumber,
+                    CoverImage = reservation.Room.RoomImages.Select(img => img.ImageBase64).FirstOrDefault(),
+                    Images = reservation.Room.RoomImages.Select(img => img.ImageBase64).ToList(),
+                    Services = reservation.Room.RoomServices.Select(rs => new
+                    {
+                        rs.Service.Id,
+                        rs.Service.Name,
+                        rs.Service.Description
+                    }).ToList()
                 }
             };
         }
 
+        // PUT: api/Reservation/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutReservation(int id, Reservation reservation)
         {
@@ -138,6 +170,7 @@ namespace HotelReservationAPI.Controllers
             return NoContent();
         }
 
+        // POST: api/Reservation
         [HttpPost]
         public async Task<ActionResult<object>> PostReservation([FromBody] Reservation reservation)
         {
@@ -151,10 +184,14 @@ namespace HotelReservationAPI.Controllers
                 var room = await _context.Room
                     .Include(r => r.RoomServices)
                         .ThenInclude(rs => rs.Service)
+                    .Include(r => r.RoomImages)
                     .FirstOrDefaultAsync(r => r.Id == reservation.RoomId);
 
                 if (room == null)
                     return BadRequest("La habitación especificada no existe.");
+
+                // Estado inicial por defecto: Activa
+                reservation.Status ??= "Activa";
 
                 _context.Reservation.Add(reservation);
                 await _context.SaveChangesAsync();
@@ -164,27 +201,28 @@ namespace HotelReservationAPI.Controllers
                     reservation.Id,
                     reservation.ClientId,
                     reservation.RoomId,
-                    reservation.StartDate,
-                    reservation.EndDate,
+                    StartDate = reservation.StartDate.HasValue ? reservation.StartDate.Value.ToString("yyyy-MM-dd") : "No definida",
+                    EndDate = reservation.EndDate.HasValue ? reservation.EndDate.Value.ToString("yyyy-MM-dd") : "No definida",
                     reservation.Status,
                     reservation.FullName,
                     reservation.Email,
                     reservation.Phone,
-                    ImagePath = GetImagePath(room.Id),
                     Room = new
                     {
                         room.Id,
                         room.Name,
                         room.Capacity,
                         room.Price,
-                        room.ImagePath,
-                        Services = room.RoomServices
-                            .Select(rs => new
-                            {
-                                rs.Service.Id,
-                                rs.Service.Name,
-                                rs.Service.Description
-                            }).ToList()
+                        room.BranchId,
+                        room.RoomNumber,
+                        CoverImage = room.RoomImages.Select(img => img.ImageBase64).FirstOrDefault(),
+                        Images = room.RoomImages.Select(img => img.ImageBase64).ToList(),
+                        Services = room.RoomServices.Select(rs => new
+                        {
+                            rs.Service.Id,
+                            rs.Service.Name,
+                            rs.Service.Description
+                        }).ToList()
                     }
                 });
             }
@@ -200,17 +238,40 @@ namespace HotelReservationAPI.Controllers
             }
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReservation(int id)
+        // PUT: api/Reservation/ChangeStatus/5
+        [HttpPut("ChangeStatus/{id}")]
+        public async Task<IActionResult> ChangeStatus(int id, [FromBody] string newStatus)
         {
-            var reservation = await _context.Reservation.FindAsync(id);
-            if (reservation == null)
-                return NotFound();
+            var reservation = await _context.Reservation
+                .Include(r => r.Room)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
-            _context.Reservation.Remove(reservation);
+            if (reservation == null)
+                return NotFound("Reserva no encontrada.");
+
+            // Solo se permiten los estados definidos
+            if (newStatus != "Activa" && newStatus != "Cancelada")
+                return BadRequest("Estado inválido. Solo se permite 'Activa' o 'Cancelada'.");
+
+            reservation.Status = newStatus;
+
+            // Sincronizar el estado de la habitación
+            if (reservation.Room != null)
+            {
+                if (newStatus == "Activa")
+                    reservation.Room.Status = "Ocupada";
+                else if (newStatus == "Cancelada")
+                    reservation.Room.Status = "Disponible";
+            }
+
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new
+            {
+                Message = $"Estado de la reserva {id} actualizado a '{newStatus}'.",
+                ReservationId = reservation.Id,
+                RoomStatus = reservation.Room?.Status
+            });
         }
 
         private bool ReservationExists(int id)
