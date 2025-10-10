@@ -65,35 +65,6 @@ namespace HotelReservationAPI.Migrations
                     b.ToTable("BranchImage", (string)null);
                 });
 
-            modelBuilder.Entity("HotelReservationAPI.Models.Client", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("DPI")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Client", (string)null);
-                });
-
             modelBuilder.Entity("HotelReservationAPI.Models.Offer", b =>
                 {
                     b.Property<int>("Id")
@@ -137,9 +108,6 @@ namespace HotelReservationAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("ClientId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -168,8 +136,6 @@ namespace HotelReservationAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClientId");
-
                     b.HasIndex("RoomId");
 
                     b.ToTable("Reservation", (string)null);
@@ -197,134 +163,6 @@ namespace HotelReservationAPI.Migrations
                     b.ToTable("RoomImage", (string)null);
                 });
 
-            modelBuilder.Entity("HotelReservationAPI.Models.RoomService", b =>
-                {
-                    b.Property<int>("RoomId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ServiceId")
-                        .HasColumnType("int");
-
-                    b.HasKey("RoomId", "ServiceId");
-
-                    b.HasIndex("ServiceId");
-
-                    b.ToTable("RoomService", (string)null);
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.Service", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Service", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Conexión de alta velocidad gratuita en todas las habitaciones",
-                            Name = "WiFi"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Description = "Pantalla plana con cable internacional y streaming",
-                            Name = "Televisión"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Description = "Estacionamiento privado con seguridad 24 horas",
-                            Name = "Parqueo"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Description = "Atención personalizada con menú variado disponible las 24 horas",
-                            Name = "Servicio al cuarto"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Description = "Piscina al aire libre con bar incluido",
-                            Name = "Piscina"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Description = "Climatización moderna y silenciosa",
-                            Name = "Aire acondicionado"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Description = "Acceso a spa con sauna, masajes y tratamientos de relajación",
-                            Name = "Spa"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Description = "Shuttle gratuito desde y hacia el aeropuerto",
-                            Name = "Transporte"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Description = "Acceso a instalaciones deportivas y fitness",
-                            Name = "Gimnasio"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Description = "Buffet internacional o desayuno continental",
-                            Name = "Desayuno incluido"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Description = "Habitaciones aptas para huéspedes con mascotas",
-                            Name = "Pet Friendly"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Description = "Seguridad adicional con caja fuerte privada",
-                            Name = "Caja fuerte"
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Description = "Bebidas y snacks disponibles en la habitación",
-                            Name = "Mini Bar"
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Description = "Balcón con vistas panorámicas exclusivas",
-                            Name = "Balcón privado"
-                        },
-                        new
-                        {
-                            Id = 15,
-                            Description = "Habitaciones con vista al lago, mar o montaña",
-                            Name = "Vista premium"
-                        });
-                });
-
             modelBuilder.Entity("Room", b =>
                 {
                     b.Property<int>("Id")
@@ -348,10 +186,6 @@ namespace HotelReservationAPI.Migrations
 
                     b.Property<int>("RoomNumber")
                         .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -382,10 +216,6 @@ namespace HotelReservationAPI.Migrations
 
             modelBuilder.Entity("HotelReservationAPI.Models.Reservation", b =>
                 {
-                    b.HasOne("HotelReservationAPI.Models.Client", null)
-                        .WithMany("Reservations")
-                        .HasForeignKey("ClientId");
-
                     b.HasOne("Room", "Room")
                         .WithMany()
                         .HasForeignKey("RoomId");
@@ -402,25 +232,6 @@ namespace HotelReservationAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Room");
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.RoomService", b =>
-                {
-                    b.HasOne("Room", "Room")
-                        .WithMany("RoomServices")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HotelReservationAPI.Models.Service", "Service")
-                        .WithMany("RoomServices")
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Room");
-
-                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("Room", b =>
@@ -441,21 +252,9 @@ namespace HotelReservationAPI.Migrations
                     b.Navigation("Rooms");
                 });
 
-            modelBuilder.Entity("HotelReservationAPI.Models.Client", b =>
-                {
-                    b.Navigation("Reservations");
-                });
-
-            modelBuilder.Entity("HotelReservationAPI.Models.Service", b =>
-                {
-                    b.Navigation("RoomServices");
-                });
-
             modelBuilder.Entity("Room", b =>
                 {
                     b.Navigation("RoomImages");
-
-                    b.Navigation("RoomServices");
                 });
 #pragma warning restore 612, 618
         }

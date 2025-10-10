@@ -7,8 +7,6 @@ namespace HotelReservationAPI.Models
     {
         public int Id { get; set; }
 
-        public int? ClientId { get; set; }
-
         public int? RoomId { get; set; }
 
         public DateTime? StartDate { get; set; }
